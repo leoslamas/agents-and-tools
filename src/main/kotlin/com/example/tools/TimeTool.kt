@@ -4,7 +4,7 @@ import com.openai.core.JsonValue
 import com.openai.models.FunctionDefinition
 import com.openai.models.chat.completions.ChatCompletionTool
 import jakarta.inject.Singleton
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Singleton
@@ -32,8 +32,8 @@ class TimeTool : AgentTool {
     }
 
     override fun execute(arguments: String): String {
-        val now = LocalDateTime.now()
-        val formatted = now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        return "{\"currentTime\":\"\$formatted\"}"
+        val now = ZonedDateTime.now()
+        val formatted = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        return "{\"currentTime\":\"$formatted\"}"
     }
 }

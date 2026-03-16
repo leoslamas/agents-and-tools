@@ -32,19 +32,30 @@ The application features:
    export OPENAI_API_KEY="YOUR_API_KEY"
    ```
 
-2. **Build the Application**
+2. **Format the Code**
+   Automatically corrects any formatting deviations using [ktlint](https://pinterest.github.io/ktlint/):
+   ```bash
+   ./gradlew format
+   ```
+
+3. **Run the Tests**
+   ```bash
+   ./gradlew test
+   ```
+
+4. **Build the Application**
    Compile and build the project using the Gradle wrapper:
    ```bash
    ./gradlew build
    ```
 
-3. **Run the Application**
+5. **Run the Application**
    Start the Micronaut server locally (runs on port `8080` by default):
    ```bash
    ./gradlew run
    ```
 
-4. **Test the Endpoints**
+6. **Test the Endpoints**
 
    **Math Agent**:
    ```bash
@@ -55,15 +66,6 @@ The application features:
    ```bash
    curl "http://localhost:8080/agents/weather?prompt=What+is+the+weather+in+London"
    ```
-
-## Code Formatting
-
-This project uses [ktlint](https://pinterest.github.io/ktlint/) to enforce Kotlin coding standards. You can run the following custom Gradle task to format your code:
-
-* **Format Code**: Automatically corrects any formatting deviations.
-  ```bash
-  ./gradlew format
-  ```
 
 ## Architecture Details
 

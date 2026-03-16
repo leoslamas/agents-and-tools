@@ -40,7 +40,9 @@ class CalculatorTool : AgentTool {
     override fun execute(arguments: String): String {
         return try {
             val root = mapper.readTree(arguments)
-            val expression = root.get("expression").asText()
+            val expressionNode = root.get("expression")
+            if (expressionNode == null) return "{\"error\":\"Missing expression\"}"
+            val expression = expressionNode.asText()
 
             val cleanExpr = expression.replace(" ", "")
             val regex = Regex("(-?\\d+\\.?\\d*)([+\\-*/])(-?\\d+\\.?\\d*)")
@@ -61,9 +63,9 @@ class CalculatorTool : AgentTool {
                 throw IllegalArgumentException("Could not parse simple expression")
             }
 
-            "{\"result\":\"\$result\"}"
+            "{\"result\":\"$result\"}"
         } catch (e: Exception) {
-            "{\"error\":\"\${e.message}\"}"
+            "{\"error\":\"${e.message}\"}"
         }
     }
 }

@@ -40,12 +40,14 @@ class WeatherTool : AgentTool {
     override fun execute(arguments: String): String {
         return try {
             val root = mapper.readTree(arguments)
-            val city = root.get("city").asText()
+            val cityNode = root.get("city")
+            if (cityNode == null) return "{\"error\":\"Missing city\"}"
+            val city = cityNode.asText()
 
             val temperature = kotlin.math.abs(city.hashCode()) % 30 + 10 // Random temp 10-40C
             val conditions = listOf("Sunny", "Cloudy", "Rainy", "Windy")[kotlin.math.abs(city.hashCode()) % 4]
 
-            "{\"city\":\"\$city\", \"temperature\":\$temperature, \"conditions\":\"\$conditions\", \"unit\":\"Celsius\"}"
+            "{\"city\":\"" + city + "\", \"temperature\":" + temperature + ", \"conditions\":\"" + conditions + "\", \"unit\":\"Celsius\"}"
         } catch (e: Exception) {
             "{\"error\":\"\${e.message}\"}"
         }
