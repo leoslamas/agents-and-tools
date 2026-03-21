@@ -1,25 +1,27 @@
 package com.example.agents
 
 import com.example.tools.AgentTool
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.openai.client.OpenAIClient
-import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import com.openai.models.chat.completions.ChatCompletionMessageParam
 import com.openai.models.chat.completions.ChatCompletionSystemMessageParam
 import com.openai.models.chat.completions.ChatCompletionToolMessageParam
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam
+import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 import org.slf4j.LoggerFactory
 
 @Singleton
-class AgentRunner(private val openAIClient: OpenAIClient) {
+class AgentRunner(
+    private val openAIClient: OpenAIClient,
+    @Value("\${llm.model}") private val model: String
+) {
 
     private val logger = LoggerFactory.getLogger(AgentRunner::class.java)
+    private val mapper = jacksonObjectMapper()
 
-    /**
-     * Executes the conversational loop using the specified system prompt and tools.
-     */
     fun run(userPrompt: String, systemPrompt: String, tools: List<AgentTool>): String {
         val messages = mutableListOf<ChatCompletionMessageParam>(
             ChatCompletionMessageParam.ofSystem(
@@ -38,12 +40,12 @@ class AgentRunner(private val openAIClient: OpenAIClient) {
         val toolsMap = tools.associateBy { it.name }
 
         var iteration = 0
-        while (iteration < 10) { // Safety limit
+        while (iteration < 10) {
             iteration++
-            logger.info("Agent iteration \$iteration")
+            logger.info("Agent iteration $iteration")
 
             val requestBuilder = ChatCompletionCreateParams.builder()
-                .model(ChatModel.GPT_4O_MINI)
+                .model(model)
                 .messages(messages)
 
             if (toolDefinitions.isNotEmpty()) {
@@ -52,7 +54,7 @@ class AgentRunner(private val openAIClient: OpenAIClient) {
 
             val request = requestBuilder.build()
             val response = openAIClient.chat().completions().create(request)
-            val responseMessage = response.choices().first().message()
+            val responseMessage = response.choices().firstOrNull()?.message() ?: return "No response from agent"
 
             val assistantMessageBuilder = ChatCompletionAssistantMessageParam.builder()
                 .content(ChatCompletionAssistantMessageParam.Content.ofText(responseMessage.content().orElse("")))
@@ -64,11 +66,10 @@ class AgentRunner(private val openAIClient: OpenAIClient) {
 
             val toolCalls = responseMessage.toolCalls()
             if (toolCalls.isEmpty || toolCalls.get().isEmpty()) {
-                // No more tool calls, we have the final answer
                 return responseMessage.content().orElse("No response from agent")
             }
 
-            logger.info("Agent decided to call \${toolCalls.get().size} tool(s)")
+            logger.info("Agent decided to call ${toolCalls.get().size} tool(s)")
 
             for (toolCall in toolCalls.get()) {
                 if (toolCall.isFunction()) {
@@ -76,20 +77,20 @@ class AgentRunner(private val openAIClient: OpenAIClient) {
                     val toolName = functionCall.name()
                     val arguments = functionCall.arguments()
 
-                    logger.info("Executing tool: \$toolName with args: \$arguments")
+                    logger.debug("Executing tool: $toolName with args: $arguments")
 
                     val agentTool = toolsMap[toolName]
                     val result = if (agentTool != null) {
                         try {
                             agentTool.execute(arguments)
                         } catch (e: Exception) {
-                            "{\"error\": \"\${e.message}\"}"
+                            mapper.writeValueAsString(mapOf("error" to e.message))
                         }
                     } else {
-                        "{\"error\": \"Unknown tool \$toolName\"}"
+                        mapper.writeValueAsString(mapOf("error" to "Unknown tool $toolName"))
                     }
 
-                    logger.info("Tool \$toolName returned: \$result")
+                    logger.debug("Tool $toolName returned: $result")
 
                     messages.add(
                         ChatCompletionMessageParam.ofTool(

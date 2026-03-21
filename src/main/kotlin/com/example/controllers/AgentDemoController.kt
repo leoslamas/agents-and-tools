@@ -1,32 +1,26 @@
 package com.example.controllers
 
-import com.example.agents.MathAgent
-import com.example.agents.WeatherAgent
+import com.example.agents.AgentOrchestrator
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.annotation.Post
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.serde.annotation.Serdeable
 
-@Controller("/agents")
-class AgentDemoController(
-    private val mathAgent: MathAgent,
-    private val weatherAgent: WeatherAgent
-) {
+@Serdeable
+data class AgentRequest(val prompt: String)
 
-    @Get("/math")
-    fun askMath(@QueryValue prompt: String): String {
+@Controller("/agent")
+class AgentDemoController(private val orchestrator: AgentOrchestrator) {
+
+    @Post
+    @ExecuteOn(TaskExecutors.BLOCKING)
+    fun ask(@Body request: AgentRequest): String {
         return try {
-            mathAgent.ask(prompt)
+            orchestrator.route(request.prompt)
         } catch (e: Exception) {
-            "Error: \${e.message}"
-        }
-    }
-
-    @Get("/weather")
-    fun askWeather(@QueryValue prompt: String): String {
-        return try {
-            weatherAgent.ask(prompt)
-        } catch (e: Exception) {
-            "Error: \${e.message}"
+            "Error: ${e.message}"
         }
     }
 }

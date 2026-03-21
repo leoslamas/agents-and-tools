@@ -11,10 +11,12 @@ class OpenAIConfig {
 
     @Singleton
     fun openAIClient(
-        @Value("\${openai.api.key}") apiKey: String
+        @Value("\${llm.api.key}") apiKey: String,
+        @Value("\${llm.url}") baseUrl: String
     ): OpenAIClient {
         return OpenAIOkHttpClient.builder()
             .apiKey(apiKey)
+            .baseUrl(baseUrl)
             .build()
     }
 }

@@ -9,7 +9,11 @@ class WeatherAgent(
     private val agentRunner: AgentRunner,
     private val timeTool: TimeTool,
     private val weatherTool: WeatherTool
-) {
+) : Agent {
+
+    override val name = "weather_agent"
+    override val description = "Specialized in weather forecasts and time. Can check weather for cities and tell the current time."
+
     private val systemPrompt = """
         You are WeatherAgent, a helpful assistant specialized in weather forecasts and time.
         You have tools to get the current time and check the weather for cities.
@@ -18,7 +22,7 @@ class WeatherAgent(
 
     private val tools = listOf(timeTool, weatherTool)
 
-    fun ask(prompt: String): String {
+    override fun ask(prompt: String): String {
         return agentRunner.run(prompt, systemPrompt, tools)
     }
 }

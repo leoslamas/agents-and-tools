@@ -1,70 +1,79 @@
 package com.example.tools
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class CalculatorToolTest {
 
     private val calculatorTool = CalculatorTool()
+    private val mapper = jacksonObjectMapper()
 
     @Test
-    fun testToolNameAndDescription() {
+    fun `deve retornar nome e descricao corretos`() {
         assertEquals("calculate", calculatorTool.name)
         assertNotNull(calculatorTool.description)
     }
 
     @Test
-    fun testValidAddition() {
-        val result = calculatorTool.execute("{\"expression\": \"10 + 20\"}")
-        assertTrue(result.contains("\"result\":\"30.0\""), "Result should be 30.0, got: " + result)
+    fun `deve calcular soma corretamente`() {
+        val result = calculatorTool.execute("""{"expression": "10 + 20"}""")
+        val json = mapper.readTree(result)
+        assertEquals("30.0", json.get("result").asText())
     }
 
     @Test
-    fun testValidSubtraction() {
-        val result = calculatorTool.execute("{\"expression\": \"50 - 15\"}")
-        assertTrue(result.contains("\"result\":\"35.0\""), "Result should be 35.0, got: " + result)
+    fun `deve calcular subtracao corretamente`() {
+        val result = calculatorTool.execute("""{"expression": "50 - 15"}""")
+        val json = mapper.readTree(result)
+        assertEquals("35.0", json.get("result").asText())
     }
 
     @Test
-    fun testValidMultiplication() {
-        val result = calculatorTool.execute("{\"expression\": \"-5 * 4.5\"}")
-        assertTrue(result.contains("\"result\":\"-22.5\""), "Result should be -22.5, got: " + result)
+    fun `deve calcular multiplicacao corretamente`() {
+        val result = calculatorTool.execute("""{"expression": "-5 * 4.5"}""")
+        val json = mapper.readTree(result)
+        assertEquals("-22.5", json.get("result").asText())
     }
 
     @Test
-    fun testValidDivision() {
-        val result = calculatorTool.execute("{\"expression\": \"100 / 4\"}")
-        assertTrue(result.contains("\"result\":\"25.0\""), "Result should be 25.0, got: " + result)
+    fun `deve calcular divisao corretamente`() {
+        val result = calculatorTool.execute("""{"expression": "100 / 4"}""")
+        val json = mapper.readTree(result)
+        assertEquals("25.0", json.get("result").asText())
     }
 
     @Test
-    fun testDivisionByZero() {
-        val result = calculatorTool.execute("{\"expression\": \"10 / 0\"}")
-        assertTrue(result.contains("\"result\":\"Infinity\""), "Got: " + result)
+    fun `deve retornar Infinity quando dividir por zero`() {
+        val result = calculatorTool.execute("""{"expression": "10 / 0"}""")
+        val json = mapper.readTree(result)
+        assertEquals("Infinity", json.get("result").asText())
     }
 
     @Test
-    fun testDecimalNumbers() {
-        val result = calculatorTool.execute("{\"expression\": \"3.5 + 2.5\"}")
-        assertTrue(result.contains("\"result\":\"6.0\""), "Got: " + result)
+    fun `deve calcular numeros decimais corretamente`() {
+        val result = calculatorTool.execute("""{"expression": "3.5 + 2.5"}""")
+        val json = mapper.readTree(result)
+        assertEquals("6.0", json.get("result").asText())
     }
 
     @Test
-    fun testMissingExpression() {
+    fun `deve retornar erro quando expressao esta ausente`() {
         val result = calculatorTool.execute("{}")
-        assertTrue(result.contains("\"error\":\"Missing expression\""), "Got: " + result)
+        val json = mapper.readTree(result)
+        assertEquals("Missing expression", json.get("error").asText())
     }
 
     @Test
-    fun testInvalidExpression() {
-        val result = calculatorTool.execute("{\"expression\": \"10 ^ 2\"}")
-        assertTrue(result.contains("\"error\""), "Got: " + result)
+    fun `deve retornar erro quando expressao e invalida`() {
+        val result = calculatorTool.execute("""{"expression": "10 ^ 2"}""")
+        val json = mapper.readTree(result)
+        assertNotNull(json.get("error"))
     }
 
     @Test
-    fun testToolDefinitionIsValid() {
+    fun `deve gerar definicao de ferramenta valida`() {
         val toolDef = calculatorTool.toToolDefinition()
         assertNotNull(toolDef)
     }

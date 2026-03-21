@@ -41,15 +41,15 @@ class WeatherTool : AgentTool {
         return try {
             val root = mapper.readTree(arguments)
             val cityNode = root.get("city")
-            if (cityNode == null) return "{\"error\":\"Missing city\"}"
+            if (cityNode == null) return mapper.writeValueAsString(mapOf("error" to "Missing city"))
             val city = cityNode.asText()
 
             val temperature = kotlin.math.abs(city.hashCode()) % 30 + 10 // Random temp 10-40C
             val conditions = listOf("Sunny", "Cloudy", "Rainy", "Windy")[kotlin.math.abs(city.hashCode()) % 4]
 
-            "{\"city\":\"" + city + "\", \"temperature\":" + temperature + ", \"conditions\":\"" + conditions + "\", \"unit\":\"Celsius\"}"
+            mapper.writeValueAsString(mapOf("city" to city, "temperature" to temperature, "conditions" to conditions, "unit" to "Celsius"))
         } catch (e: Exception) {
-            "{\"error\":\"\${e.message}\"}"
+            mapper.writeValueAsString(mapOf("error" to e.message))
         }
     }
 }

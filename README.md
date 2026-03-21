@@ -1,74 +1,68 @@
-# Micronaut Kotlin Agents and Tools Demo
+# Agents and Tools
 
-A Kotlin project using the Micronaut framework that demonstrates how to cleanly build and use AI Agents and Tools via the official OpenAI Java SDK.
+A Kotlin project using Micronaut that demonstrates a two-layer agent architecture powered by any OpenAI-compatible LLM API.
 
 ## Overview
 
-This project showcases a straightforward architecture to build conversational agents capable of calling deterministic functions ("tools").
-
-The application features:
-* **Micronaut Framework**: Fast startup, dependency injection, and HTTP server capabilities.
-* **Coroutines**: Fully non-blocking concurrency for handling API calls.
-* **OpenAI Java SDK v4**: Uses the official `com.openai:openai-java` SDK to leverage models with strict tool definitions.
-* **Agents**: Custom encapsulated entities that share tools or have exclusive tools.
-* **Tools**: Simple, interface-driven objects (`AgentTool`) mapped seamlessly to OpenAI's tool JSON schemas.
-
-### Implemented Agents
-1. **Math Agent**: Designed to answer questions about mathematics.
-   * **Tools**: `CalculatorTool` (Math expression evaluation) and `TimeTool` (Current date/time).
-2. **Weather Agent**: Designed to answer questions about the weather.
-   * **Tools**: `WeatherTool` (Mock weather conditions) and `TimeTool` (Current date/time).
+A single HTTP endpoint receives a user prompt. An orchestrator layer uses the LLM to decide which specialized agent should handle the request. Each agent runs its own tool-calling loop with domain-specific tools.
 
 ## Prerequisites
-* **Java**: JDK 21+
-* **Kotlin**: 1.9+
-* **API Key**: You need an active OpenAI API Key.
+
+- JDK 21+
 
 ## Getting Started
 
-1. **Set your API Key**
-   Export your OpenAI API key in your terminal session:
-   ```bash
-   export OPENAI_API_KEY="YOUR_API_KEY"
-   ```
+```bash
+./gradlew run
+```
 
-2. **Format the Code**
-   Automatically corrects any formatting deviations using [ktlint](https://pinterest.github.io/ktlint/):
-   ```bash
-   ./gradlew format
-   ```
+The server starts on port `8080` by default.
 
-3. **Run the Tests**
-   ```bash
-   ./gradlew test
-   ```
+## Usage
 
-4. **Build the Application**
-   Compile and build the project using the Gradle wrapper:
-   ```bash
-   ./gradlew build
-   ```
+```bash
+curl -X POST http://localhost:8080/agent \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "What is 25 * 4?"}'
+```
 
-5. **Run the Application**
-   Start the Micronaut server locally (runs on port `8080` by default):
-   ```bash
-   ./gradlew run
-   ```
+```bash
+curl -X POST http://localhost:8080/agent \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "What is the weather in London?"}'
+```
 
-6. **Test the Endpoints**
+## Agents
 
-   **Math Agent**:
-   ```bash
-   curl "http://localhost:8080/agents/math?prompt=What+is+25+plus+45"
-   ```
+| Agent | Description | Tools |
+|-------|-------------|-------|
+| **MathAgent** | Answers math-related questions | CalculatorTool, TimeTool |
+| **WeatherAgent** | Answers weather-related questions | WeatherTool, TimeTool |
+| **GenericAgent** | General conversation | None |
 
-   **Weather Agent**:
-   ```bash
-   curl "http://localhost:8080/agents/weather?prompt=What+is+the+weather+in+London"
-   ```
+## Architecture
 
-## Architecture Details
+```
+POST /agent
+  -> AgentDemoController
+    -> AgentOrchestrator (LLM picks the right agent)
+      -> Agent.ask(prompt)
+        -> AgentRunner (tool-calling loop, up to 10 iterations)
+          -> AgentTool.execute(arguments)
+```
 
-* `com.example.agents.AgentRunner`: A core component that manages the iterative lifecycle of an agent exchanging messages with the OpenAI API. It handles parsing the model's `tool_calls` request, finding the correct implementation locally, executing it, and sending the results back.
-* `com.example.tools.AgentTool`: An interface implemented by all tools. It dictates the schema mapping expected by the OpenAI SDK and provides the standard `execute(arguments: String): String` function signature.
-* `com.example.config.OpenAIConfig`: Injects the configured SDK client as a `@Singleton` bean.
+### Key Components
+
+- **`AgentOrchestrator`**: Presents all registered agents as function tools to the LLM. The LLM decides which agent to invoke based on the user prompt.
+- **`Agent`**: Interface with `name`, `description`, and `ask(prompt)`. Each agent has its own system prompt and set of tools.
+- **`AgentRunner`**: Executes the iterative tool-calling loop for a given agent -- sends messages, processes tool calls, feeds results back, up to 10 rounds.
+- **`AgentTool`**: Interface for tools. Defines the JSON schema for the function and provides `execute(arguments): String`.
+- **`OpenAIConfig`**: Singleton factory that creates the SDK client configured via `llm.*` properties.
+
+## Development
+
+```bash
+./gradlew format    # ktlint formatting
+./gradlew test      # run tests
+./gradlew build     # compile and build
+```
