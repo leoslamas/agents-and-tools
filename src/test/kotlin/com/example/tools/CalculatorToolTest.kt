@@ -45,10 +45,10 @@ class CalculatorToolTest {
     }
 
     @Test
-    fun `deve retornar Infinity quando dividir por zero`() {
+    fun `deve retornar erro quando dividir por zero`() {
         val result = calculatorTool.execute("""{"expression": "10 / 0"}""")
         val json = mapper.readTree(result)
-        assertEquals("Infinity", json.get("result").asText())
+        assertEquals("Division by zero", json.get("error").asText())
     }
 
     @Test

@@ -41,7 +41,8 @@ class AgentOrchestrator(
                         "description" to "The user's question or request to forward to this agent."
                     )
                 ),
-                "required" to listOf("query")
+                "required" to listOf("query"),
+                "additionalProperties" to false
             )
 
             ChatCompletionTool.ofFunction(
@@ -51,6 +52,7 @@ class AgentOrchestrator(
                             .name(agent.name)
                             .description(agent.description)
                             .parameters(JsonValue.from(parameters))
+                            .strict(true)
                             .build()
                     )
                     .build()

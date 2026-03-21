@@ -6,7 +6,6 @@ import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionMessage
 import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall
 import com.openai.models.chat.completions.ChatCompletionMessageToolCall
-import com.openai.models.chat.completions.ChatCompletionTool
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -58,10 +57,10 @@ class AgentRunnerTest {
     }
 
     private fun createMockTool(name: String, executeResult: String): AgentTool {
-        return object : AgentTool {
+        return object : AgentTool() {
             override val name: String = name
             override val description: String = "Test tool"
-            override fun toToolDefinition(): ChatCompletionTool = mockk()
+            override val parameters: Map<String, Any> = emptyMap()
             override fun execute(arguments: String): String = executeResult
         }
     }
@@ -165,10 +164,10 @@ class AgentRunnerTest {
 
         every { openAIClient.chat().completions().create(any()) } returns toolCallResponse andThen finalResponse
 
-        val failingTool = object : AgentTool {
+        val failingTool = object : AgentTool() {
             override val name = "failing_tool"
             override val description = "A tool that fails"
-            override fun toToolDefinition(): ChatCompletionTool = mockk()
+            override val parameters: Map<String, Any> = emptyMap()
             override fun execute(arguments: String): String {
                 throw RuntimeException("Tool execution failed")
             }
