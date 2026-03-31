@@ -67,7 +67,7 @@ class WeatherToolTest {
     fun `deve retornar erro quando cidade esta ausente`() {
         val result = weatherTool.execute("{}")
         val json = mapper.readTree(result)
-        assertEquals("Missing city", json.get("error").asText())
+        assertNotNull(json.get("error"))
     }
 
     @Test
@@ -81,5 +81,17 @@ class WeatherToolTest {
     fun `deve gerar definicao de ferramenta valida`() {
         val toolDef = weatherTool.toToolDefinition()
         assertNotNull(toolDef)
+    }
+
+    @Test
+    fun `deve gerar schema automaticamente a partir da data class`() {
+        val params = weatherTool.parameters
+        assertEquals("object", params["type"])
+        @Suppress("UNCHECKED_CAST")
+        val properties = params["properties"] as Map<String, Any>
+        assertNotNull(properties["city"])
+        @Suppress("UNCHECKED_CAST")
+        val required = params["required"] as List<String>
+        assertEquals(listOf("city"), required)
     }
 }

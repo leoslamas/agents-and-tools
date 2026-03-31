@@ -1,31 +1,21 @@
 package com.example.tools
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jakarta.inject.Singleton
 
-@Singleton
-class CalculatorTool : AgentTool() {
-    override val name: String = "calculate"
-    override val description: String = "Evaluates a basic mathematical expression (e.g. 2 + 2, 5 * 10)."
-    private val mapper = jacksonObjectMapper()
+data class CalculatorParams(
+    @ToolParam("The mathematical expression to evaluate (single binary operation, e.g. 2 + 2, 5 * 10).")
+    val expression: String
+)
 
-    override val parameters: Map<String, Any> = mapOf(
-        "type" to "object",
-        "properties" to mapOf(
-            "expression" to mapOf(
-                "type" to "string",
-                "description" to "The mathematical expression to evaluate."
-            )
-        ),
-        "required" to listOf("expression")
-    )
+@Singleton
+class CalculatorTool : TypedAgentTool<CalculatorParams>(CalculatorParams::class) {
+    override val name = "calculate"
+    override val description = "Evaluates a single binary math expression with two operands and one operator (e.g. 2 + 2, 5 * 10)."
 
     override fun execute(arguments: String): String {
         return try {
-            val root = mapper.readTree(arguments)
-            val expressionNode = root.get("expression")
-                ?: return mapper.writeValueAsString(mapOf("error" to "Missing expression"))
-            val expression = expressionNode.asText()
+            val params = parseArgs(arguments)
+            val expression = params.expression
 
             val cleanExpr = expression.replace(" ", "")
             val regex = Regex("(-?\\d+\\.?\\d*)([+\\-*/])(-?\\d+\\.?\\d*)")

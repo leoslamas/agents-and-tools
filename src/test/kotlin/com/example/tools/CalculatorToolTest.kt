@@ -62,7 +62,7 @@ class CalculatorToolTest {
     fun `deve retornar erro quando expressao esta ausente`() {
         val result = calculatorTool.execute("{}")
         val json = mapper.readTree(result)
-        assertEquals("Missing expression", json.get("error").asText())
+        assertNotNull(json.get("error"))
     }
 
     @Test
@@ -76,5 +76,17 @@ class CalculatorToolTest {
     fun `deve gerar definicao de ferramenta valida`() {
         val toolDef = calculatorTool.toToolDefinition()
         assertNotNull(toolDef)
+    }
+
+    @Test
+    fun `deve gerar schema automaticamente a partir da data class`() {
+        val params = calculatorTool.parameters
+        assertEquals("object", params["type"])
+        @Suppress("UNCHECKED_CAST")
+        val properties = params["properties"] as Map<String, Any>
+        assertNotNull(properties["expression"])
+        @Suppress("UNCHECKED_CAST")
+        val required = params["required"] as List<String>
+        assertEquals(listOf("expression"), required)
     }
 }

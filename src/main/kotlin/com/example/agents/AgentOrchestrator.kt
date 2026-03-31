@@ -1,18 +1,22 @@
 package com.example.agents
 
+import com.example.tools.AgentTool
+import com.example.tools.ToolParam
+import com.example.tools.generateSchema
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.openai.client.OpenAIClient
-import com.openai.core.JsonValue
-import com.openai.models.FunctionDefinition
 import com.openai.models.chat.completions.ChatCompletionCreateParams
-import com.openai.models.chat.completions.ChatCompletionFunctionTool
 import com.openai.models.chat.completions.ChatCompletionMessageParam
 import com.openai.models.chat.completions.ChatCompletionSystemMessageParam
-import com.openai.models.chat.completions.ChatCompletionTool
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 import org.slf4j.LoggerFactory
+
+data class AgentRouteParams(
+    @ToolParam("The user's question or request to forward to this agent.")
+    val query: String
+)
 
 @Singleton
 class AgentOrchestrator(
@@ -31,31 +35,14 @@ class AgentOrchestrator(
         Available agents and their capabilities are provided as tools.
     """.trimIndent()
 
+    private val routeSchema = generateSchema(AgentRouteParams::class)
+
     private val agentToolDefinitions by lazy {
         agents.map { agent ->
-            val parameters = mapOf(
-                "type" to "object",
-                "properties" to mapOf(
-                    "query" to mapOf(
-                        "type" to "string",
-                        "description" to "The user's question or request to forward to this agent."
-                    )
-                ),
-                "required" to listOf("query"),
-                "additionalProperties" to false
-            )
-
-            ChatCompletionTool.ofFunction(
-                ChatCompletionFunctionTool.builder()
-                    .function(
-                        FunctionDefinition.builder()
-                            .name(agent.name)
-                            .description(agent.description)
-                            .parameters(JsonValue.from(parameters))
-                            .strict(true)
-                            .build()
-                    )
-                    .build()
+            AgentTool.buildToolDefinition(
+                name = agent.name,
+                description = agent.description,
+                parameters = routeSchema
             )
         }
     }

@@ -22,6 +22,10 @@ class AgentRunner(
     private val logger = LoggerFactory.getLogger(AgentRunner::class.java)
     private val mapper = jacksonObjectMapper()
 
+    companion object {
+        private const val MAX_ITERATIONS = 10
+    }
+
     fun run(userPrompt: String, systemPrompt: String, tools: List<AgentTool>): String {
         val messages = mutableListOf<ChatCompletionMessageParam>(
             ChatCompletionMessageParam.ofSystem(
@@ -40,7 +44,7 @@ class AgentRunner(
         val toolsMap = tools.associateBy { it.name }
 
         var iteration = 0
-        while (iteration < 10) {
+        while (iteration < MAX_ITERATIONS) {
             iteration++
             logger.info("Agent iteration $iteration")
 

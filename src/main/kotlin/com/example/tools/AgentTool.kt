@@ -12,19 +12,35 @@ abstract class AgentTool {
 
     fun toToolDefinition(): ChatCompletionTool {
         val strictParameters = parameters + ("additionalProperties" to false)
+        return buildToolDefinition(name, description, strictParameters, strict = true)
+    }
 
-        val functionDef = FunctionDefinition.builder()
-            .name(name)
-            .description(description)
-            .parameters(JsonValue.from(strictParameters))
-            .strict(true)
-            .build()
+    companion object {
+        fun buildToolDefinition(
+            name: String,
+            description: String,
+            parameters: Map<String, Any>,
+            strict: Boolean = true
+        ): ChatCompletionTool {
+            val finalParams = if ("additionalProperties" !in parameters) {
+                parameters + ("additionalProperties" to false)
+            } else {
+                parameters
+            }
 
-        return ChatCompletionTool.ofFunction(
-            ChatCompletionFunctionTool.builder()
-                .function(functionDef)
-                .build()
-        )
+            return ChatCompletionTool.ofFunction(
+                ChatCompletionFunctionTool.builder()
+                    .function(
+                        FunctionDefinition.builder()
+                            .name(name)
+                            .description(description)
+                            .parameters(JsonValue.from(finalParams))
+                            .strict(strict)
+                            .build()
+                    )
+                    .build()
+            )
+        }
     }
 
     abstract fun execute(arguments: String): String

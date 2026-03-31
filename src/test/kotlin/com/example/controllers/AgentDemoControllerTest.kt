@@ -8,9 +8,12 @@ import com.openai.models.chat.completions.ChatCompletionMessageToolCall
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import jakarta.inject.Inject
@@ -18,6 +21,7 @@ import jakarta.inject.Singleton
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.Optional
 
 @Factory
@@ -41,7 +45,7 @@ class AgentDemoControllerTest {
 
     @BeforeEach
     fun setup() {
-        io.mockk.clearMocks(openAIClient)
+        clearMocks(openAIClient)
     }
 
     @Test
@@ -76,7 +80,17 @@ class AgentDemoControllerTest {
         every { openAIClient.chat().completions().create(any()) } returns orchestratorResponse andThen agentResponse
 
         val request = HttpRequest.POST("/agent", AgentRequest("What is 2+3"))
-        val response = client.toBlocking().retrieve(request)
-        assertEquals("The answer is 5", response)
+        val response = client.toBlocking().exchange(request, AgentResponse::class.java)
+        assertEquals(HttpStatus.OK, response.status)
+        assertEquals("The answer is 5", response.body()!!.response)
+    }
+
+    @Test
+    fun testBlankPromptReturnsBadRequest() {
+        val request = HttpRequest.POST("/agent", AgentRequest("   "))
+        val exception = assertThrows<HttpClientResponseException> {
+            client.toBlocking().exchange(request, ErrorResponse::class.java)
+        }
+        assertEquals(HttpStatus.BAD_REQUEST, exception.status)
     }
 }
